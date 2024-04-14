@@ -1,0 +1,134 @@
+---
+title: "<img src= 'https://pbs.twimg.com/profile_images/1389268418864590850/ipp7xr79_400x400.jpg' height='75'>Relatório de Inflação - IPCA"
+author: "Leonardo Oliveira"
+logo: 'https://quarto.org/quarto.png'
+date: today
+lang: pt
+format: html
+jupyter: python3
+execute:
+  warning: false
+  echo: false
+---
+
+```{python}
+# Importar os dados
+from bcb import sgs
+from datetime import datetime
+import pandas as pd
+import plotnine as p9
+
+# Coletar os dados
+dados_brutos_nucleos = sgs.get(codes = {'NS': 4466,
+'EX0': 11427,
+'DP': 16122,
+'EX3': 27839,
+'P55': 28750},
+start = '2020-01-01',
+end = datetime.now())
+
+dados_brutos_ipca = sgs.get({"Meta % anual": 13521,
+"Var. % mensal": 433},
+start = "2019-01-01")
+
+## Tratamento dos dados
+
+dados_limpos_nucleos = (
+  dados_brutos_nucleos
+  .assign(**{"Média dos núcleos": dados_brutos_nucleos.mean(axis = 1)})
+  .reset_index()
+  .melt(id_vars = "Date", var_name = "variavel", value_name = "valor")
+)
+
+
+dados_limpos_ipca = (
+  dados_brutos_ipca
+  .fillna(method = "ffill")
+  .assign(
+    **{"Var. % acum. 12m": ((dados_brutos_ipca["Var. % mensal"] / 100) + 1).rolling(12).apply(lambda x: (x.prod() - 1) * 100)}
+    )
+    .dropna()
+    .reset_index()
+    .melt(id_vars = "Date", var_name = "variavel", value_name = "valor")
+)
+    
+
+
+#janelas_moveis = (dados_brutos_ipca["Var. % mensal"] /100) + 1).rolling(12).apply(lambda x: (x.prod() - 1)*100))
+
+```
+
+::: {.grid}
+
+::: {.g-col-7}
+## Inflação cheia
+
+Principais destaques para o 	Índice nacional de preços ao consumidor-Amplo (IPCA):
+
+ - IPCA variou 0,83% no mês de fevereiro/2024 em relação ao mês anterior.
+ - Na variação anual, a inflação variou 4,93% nos últimos 12 meses.
+ - A meta de inflação para o ano de 2024 é de 3% ao ano, conforme o CMN.
+ 
+ 
+As informações são, quando não referenciadas explicitamente, do IBGE.
+ 
+::: {.callout-note}
+## **Conceito**
+IPCA é a sigla de 	Índice nacional de preços ao consumidor-Amplo, um índice de preços produzido pelo IBGE. Trata-se de uma medida acumulada do comportamento dos preços de bens e serviços da economia brasileira. A inflação é a taxa de crescimento deste índice. 
+
+:::
+
+## Núcleos da inflação
+
+- Item 1
+- Item 2
+- Item 3
+- Item 4
+:::
+
+
+::: {.g-col-5}
+```{python}
+
+(
+  p9.ggplot(dados_limpos_ipca) +
+  p9.aes(x = "Date", y = "valor", color = "variavel", linetype = "variavel") +
+  p9.geom_line(size = 1) +
+  p9.labs(title = "Inflação cheia (IPCA)", caption = "Dados: IBGE/BCE | Elaboração própria",
+  color = "",
+  linetype = "") +
+  p9.xlab("") +
+  p9.ylab("") +
+  p9.theme_gray(base_size = 16) +
+  p9.theme(legend_position = "top")
+)
+
+
+```
+
+```{python}
+print(
+  p9.ggplot(dados_limpos_nucleos) +
+  p9.aes(x = "Date", y = "valor", color = "variavel") +
+  p9.facet_wrap(facets = "variavel") +
+  p9.geom_line(size = 1) +
+  p9.labs(title = "Núcleos da Inflação (IPCA)", caption = "Dados: BCE | Elaboração própria",
+  color = "") +
+  p9.xlab("") +
+  p9.ylab("") +
+  p9.theme_gray(base_size = 16) +
+  p9.theme(legend_position = "top")
+)
+
+```
+
+
+
+
+:::
+
+
+:::
+
+
+
